@@ -1,0 +1,17 @@
+<!-- vim: set tw=120 ts=4 sw=4 et : -->
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+        <service id="sundown.markdown_factory" class="Varspool\SundownBundle\Services\MarkdownFactory" />
+
+	<service id="sundown.markdown"
+		class="Sundown\Markdown"
+		factory-service="sundown.markdown_factory"
+        factory-method="get">
+        <argument type="service" id="logger" />
+
+    </service>
+    </services>
+</container>
