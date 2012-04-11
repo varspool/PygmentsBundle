@@ -1,17 +1,20 @@
 <!-- vim: set tw=120 ts=4 sw=4 et : -->
 <container xmlns="http://symfony.com/schema/dic/services"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
-
+    xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd"
+    xmlns:varspool_pygments="http://www.varspool.com/schema/symfony/1.0/pygments">
+    
     <services>
-        <service id="sundown.markdown_factory" class="Varspool\SundownBundle\Services\MarkdownFactory" />
-
-	<service id="sundown.markdown"
-		class="Sundown\Markdown"
-		factory-service="sundown.markdown_factory"
-        factory-method="get">
-        <argument type="service" id="logger" />
-
-    </service>
+        <service id="varspool_pygments"
+                 class="Varspool\PygmentsBundle\Sundown\Render\ColorXHTML">
+            <argument type="service" id="logger" />
+            <argument>%varspool_pygments.bin%</argument>
+        </service>
+        
+        <service id="varspool_markdown" 
+                 class="Varspool\PygmentsBundle\Markdown\KwattroMarkdown" 
+                 parent="kwattro_markdown">
+            <argument type="service" id="varspool_pygments" />
+        </service>
     </services>
 </container>

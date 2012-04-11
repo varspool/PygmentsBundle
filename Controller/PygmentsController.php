@@ -1,23 +1,25 @@
 <?php
 
-namespace Varspool\SundownBundle\Controller;
+namespace Varspool\PygmentsBundle\Controller;
 
-use Bundle\FrameworkBundle\Controller\Controller;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Symfony\Component\HttpFoundation\Response;
-use Varspool\SundownBundle\Sundown\Render\ColorXHTML;
+use Symfony\Component\DependencyInjection\ContainerAware;
 
-class SundownController extends Controller
+use Varspool\PygmentsBundle\Sundown\Render\ColorXHTML;
+
+class PygmentsController extends ContainerAware
 {
     /**
-     * @Route("/pygments/html/{style}.css", name="pygments_css")
+     * @Route("/pygments/html/{style}.css", name="varspool_pygments_css")
      * @Method({"GET"})
      * @return Response
      */
     public function stylesAction($style = 'friendly')
     {
-        $styles = ColorXHTML::getStyles('html', $style);
+        $pygments_formatter = $this->container->get('varspool_pygments');
+        $styles = $pygments_formatter->getStyles($style);
 
         $response = new Response($styles);
         $response->headers->set('Content-Type', 'text/css');

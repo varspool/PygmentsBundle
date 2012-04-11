@@ -1,6 +1,6 @@
 <?php
 
-namespace Varspool\SundownBundle\Sundown\Render;
+namespace Varspool\PygmentsBundle\Sundown\Render;
 
 use Sundown\Render\XHTML;
 use \DomElement;
@@ -11,11 +11,6 @@ use Symfony\Bridge\Monolog\Logger;
 
 class ColorXHTML extends XHTML
 {
-    /**
-     * Use your configuration management to ensure this exists. It's provided
-     * by the python-pygments package in Debian/Ubuntu.
-     */
-    const PYGMENTIZE = '/usr/bin/pygmentize';
 
     /**
      * Languages that can be colorized
@@ -24,25 +19,48 @@ class ColorXHTML extends XHTML
      */
     protected $validLanguages;
 
-
     /**
      * A logger
+     *
+     * @var Monolog\Logger
      */
     protected $logger;
 
     /**
      * Styles
+     *
+     * @var array
      */
     protected static $styles = array();
 
     /**
-     * Constructor
+     * Use your configuration management to ensure this exists. It's provided
+     * by the python-pygments package in Debian/Ubuntu.
      *
-     * Don't worry, just DI :-)
+     * @var string
      */
-    public function __construct($renderFlags = array(), Logger $logger)
+    protected $pygmentize;
+
+    /**
+     *
+     * @param unknown_type $pygmentize
+     * @param Logger $logger
+     */
+    public function __construct(Logger $logger, $pygmentize = '/usr/bin/pygmentize')
     {
-        parent::__construct($renderFlags);
+        parent::__construct();
+
+        $this->logger = $logger;
+        $this->pygmentize = $pygmentize;
+    }
+
+    /**
+     * DI'd
+     *
+     * @param Logger $logger
+     */
+    public function setLogger(Logger $logger)
+    {
         $this->logger = $logger;
     }
 
@@ -56,14 +74,14 @@ class ColorXHTML extends XHTML
         if (empty($this->validLanguages)) {
             $this->validLanguages = array();
 
-            if (!is_executable(self::PYGMENTIZE)) {
+            if (!is_executable($this->pygmentize)) {
                 $this->logger->err('Disabling colorization: pygmentize not +x');
                 return array();
             }
 
             $command = sprintf(
                 '%s -L lexers',
-                self::PYGMENTIZE
+                $this->pygmentize
             );
 
             $output = `$command`;
@@ -83,7 +101,14 @@ class ColorXHTML extends XHTML
         return $this->validLanguages;
     }
 
-    public static function getStyles($formatter, $style)
+    /**
+     * Gets CSS rules for the given Pygments style
+     *
+     * @param string $style
+     * @param string $formatter Pygments formatter
+     * @return string
+     */
+    public function getStyles($style, $formatter = 'html')
     {
         if (isset(self::$styles[$formatter][$style])) {
             return self::$styles[$formatter][$style];
@@ -93,14 +118,17 @@ class ColorXHTML extends XHTML
 
         $command = sprintf(
             '%s -S %s -f %s',
-            self::PYGMENTIZE,
-            $style,
-            $formatter
+            escapeshellcmd($this->pygmentize),
+            escapeshellarg($style),
+            escapeshellarg($formatter)
         );
 
         $styles = `$command`;
 
-        self::$styles[$formatter][$style] = $styles;
+        if ($styles) {
+            self::$styles[$formatter][$style] = $styles;
+        }
+
         return $styles;
     }
 
@@ -141,12 +169,12 @@ class ColorXHTML extends XHTML
         return false;
     }
 
-    protected function getLexerArguments($language)
+    protected function getLexerArguments($language, $content)
     {
         switch ($language) {
             case 'php':
                 return array(
-                    'startinline' => 'True'
+                    'startinline' => (strpos($content, '<?php') !== false ? 'False' : 'True')
                 );
                 break;
             default:
@@ -155,13 +183,17 @@ class ColorXHTML extends XHTML
     }
 
     /**
+     * Colorizes the given content for the given language
+     *
      * @param string $language
      * @param string $content
      * @return string
      */
     protected function colorize($language, $content)
     {
-        $arguments = $this->getLexerArguments($language);
+        $this->logger->notice('Colorizing block for language: ' . $language);
+
+        $arguments = $this->getLexerArguments($language, $content);
 
         $argstring = '';
         foreach ($arguments as $argument => $value) {
@@ -170,7 +202,7 @@ class ColorXHTML extends XHTML
 
         $command = sprintf(
             '%s -l %s -f html %s',
-            self::PYGMENTIZE,
+            $this->pygmentize,
             $language,
             $argstring
         );
@@ -226,7 +258,7 @@ class ColorXHTML extends XHTML
             $this->logger->warn('Bad pygments run: ' . $err);
         }
 
-        return $output;
+        return trim($output);
     }
 
     /**
@@ -235,41 +267,50 @@ class ColorXHTML extends XHTML
      */
     public function postProcess($string)
     {
-        $document = new DomDocument('1.0', 'utf-8');
-        $document->preserveWhiteSpace = true;
-        $document->formatOutput = false;
+        try {
+            $document = new DomDocument('1.0', 'utf-8');
+            $document->preserveWhiteSpace = false;
+            $document->formatOutput = false;
+            $document->strictErrorChecking = false;
+            $document->recover = true;
 
-        $document->loadHTML($string);
+            @$document->loadHTML($string);
 
-        $xpath = new DomXPath($document);
+            $xpath = new DomXPath($document);
 
-        $result = $xpath->query('//pre/code');
-        foreach ($result as $element) {
-            if ($language = $this->getLanguage($element)) {
-                $fragment = $document->createDocumentFragment();
-                $fragment->appendXML($this->colorize($language, $element->nodeValue));
+            $result = $xpath->query('//pre/code');
+            foreach ($result as $element) {
+                if ($language = $this->getLanguage($element)) {
+                    $fragment = $document->createDocumentFragment();
+                    $fragment->appendXML($this->colorize($language, $element->nodeValue));
 
-                $parent = $element->parentNode;
-                $parent->replaceChild($fragment, $element);
-            }
-        }
-
-        $result = $xpath->query('//pre/div[@class="highlight"]/pre');
-        foreach ($result as $element) {
-            $new = $document->createElement('code');
-            $new->setAttribute('class', 'highlight ' . $language);
-
-            foreach ($element->childNodes as $node) {
-                $new->appendChild(clone $node);
+                    $parent = $element->parentNode;
+                    $parent->replaceChild($fragment, $element);
+                }
             }
 
-            $element->parentNode->parentNode->replaceChild($new,
-                $element->parentNode);
+            $result = $xpath->query('//pre/div[@class="highlight"]/pre');
+            foreach ($result as $element) {
+                $new = $document->createElement('code');
+                $new->setAttribute('class', 'highlight ' . $language);
+
+                foreach ($element->childNodes as $node) {
+                    $new->appendChild(clone $node);
+                }
+
+                $element->parentNode->parentNode->replaceChild($new,
+                    $element->parentNode);
+            }
+
+            $body = $document->saveHTML($document->documentElement->firstChild);
+            $body = substr($body, 7, -8);
+
+            $return = $body;
+        } catch (\Exception $e) {
+            $this->logger->err('Could not colorize: ' . $e);
+            $return = $string;
         }
 
-        $body = $document->saveHTML($document->documentElement->firstChild);
-        $body = substr($body, 7, -8);
-
-        return $body;
+        return $return;
     }
 }
