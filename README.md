@@ -3,10 +3,11 @@
 
 Provides (X)HTML rendering of Markdown similar to GFM (Github flavored markdown),
 including syntax-highted fenced code blocks. Code coloring is provided by
-the Python Pygments library (interfaces with pygmentize using proc_open for now).
+the Python Pygments library (interfaces with pygmentize using proc\_open for now).
 
 VarspoolPygmentsBundle doesn't reinvent the wheel: it uses the Sundown support
-in KwattroMarkdownBundle to do the initial Markdown rendering.
+in [KwattroMarkdownBundle](https://github.com/kwattro/KwattroMarkdownBundle) to do 
+the initial Markdown rendering.
 
 ## Installation
 
