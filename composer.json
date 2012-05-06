@@ -1,0 +1,21 @@
+{
+    "name": "varspool/pygments-bundle",
+    "description": "A bundle that integrates Pygments to provide code-highlighting within Sundown rendered Markdown",
+    "keywords": ["sundown", "markdown", "pygments"],
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Dominic Scheirlinck",
+            "homepage": "https://github.com/dominics"
+        }
+    ],
+    "require": {
+        "symfony/framework-bundle": "2.*",
+	"kwattro/markdown-bundle": "*"
+    },
+    "autoload": {
+        "psr-0": { "Varspool\\PygmentsBundle": "" }
+    },
+    "target-dir": "Varspool/PygmentsBundle"
+}
