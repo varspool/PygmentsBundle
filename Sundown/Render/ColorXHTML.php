@@ -42,6 +42,13 @@ class ColorXHTML extends XHTML
     protected $pygmentize;
 
     /**
+     * Used for DomDocument workaround
+     *
+     * @var string
+     */
+    protected $documentTemplate = '<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/></head><body>%s</body></html>';
+
+    /**
      *
      * @param unknown_type $pygmentize
      * @param Logger $logger
@@ -250,83 +257,27 @@ class ColorXHTML extends XHTML
             if ($handle !== null) {
                 proc_close($handle);
             }
-            $this->logger->warn($e);
-            return $content;
+            throw $e;
         }
 
         if ($return_value != 0 || $err) {
-            $this->logger->warn('Bad pygments run: ' . $err);
+            throw new \Exception('Bad pygments run: ' . $err);
         }
 
         return trim($output);
     }
 
-    /**
-     * @param string $string
-     * @return string
-     */
-    public function postProcess($string)
+    public function blockCode($code, $language)
     {
-        /*
-         * The processed string must be wrapped into a fake HTML document before
-         * processing with DomDocument. Otherwise, the charset can't be set.
-         */
-        $string = sprintf('
-            <html>
-                <head>
-                    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-                </head>
-                <body>
-                    %s
-                </body>
-            </html>
-        ', $string);
-
         try {
-            $document = new DomDocument('1.0', 'UTF-8');
-            $document->preserveWhiteSpace = false;
-            $document->formatOutput = true;
-            $document->strictErrorChecking = false;
-            $document->recover = true;
+            $colorized = $this->colorize($language, $code);
+            $colorized = substr($colorized, 28, -12);
+            $colorized = sprintf('<pre><code class="highlight %s">%s</code></pre>', $language, $colorized);
 
-            @$document->loadHTML($string);
-
-            $xpath = new DomXPath($document);
-
-            $result = $xpath->query('//pre/code');
-            foreach ($result as $element) {
-                if ($language = $this->getLanguage($element)) {
-                    $fragment = $document->createDocumentFragment();
-                    $fragment->appendXML($this->colorize($language, $element->nodeValue));
-
-                    $parent = $element->parentNode;
-                    $parent->replaceChild($fragment, $element);
-                }
-            }
-
-            $result = $xpath->query('//pre/div[@class="highlight"]/pre');
-            foreach ($result as $element) {
-                $new = $document->createElement('code');
-                $new->setAttribute('class', 'highlight ' . $language);
-
-                foreach ($element->childNodes as $node) {
-                    $new->appendChild(clone $node);
-                }
-
-                $element->parentNode->parentNode->replaceChild($new,
-                    $element->parentNode);
-            }
-
-            $body = $document->saveHTML($document->documentElement->childNodes->item(1));
-            $body = substr($body, 6, -7);
-            $body = trim($body);
-
-            $return = $body;
+            return $colorized;
         } catch (\Exception $e) {
-            $this->logger->err('Could not colorize: ' . $e);
-            $return = $string;
+            $this->logger->warn($e);
+            return sprintf('<pre><code>%s</code></pre>', $code);
         }
-
-        return $return;
     }
 }
