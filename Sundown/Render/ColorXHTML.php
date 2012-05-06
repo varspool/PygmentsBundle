@@ -267,10 +267,25 @@ class ColorXHTML extends XHTML
      */
     public function postProcess($string)
     {
+        /*
+         * The processed string must be wrapped into a fake HTML document before
+         * processing with DomDocument. Otherwise, the charset can't be set.
+         */
+        $string = sprintf('
+            <html>
+                <head>
+                    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+                </head>
+                <body>
+                    %s
+                </body>
+            </html>
+        ', $string);
+
         try {
-            $document = new DomDocument('1.0', 'utf-8');
+            $document = new DomDocument('1.0', 'UTF-8');
             $document->preserveWhiteSpace = false;
-            $document->formatOutput = false;
+            $document->formatOutput = true;
             $document->strictErrorChecking = false;
             $document->recover = true;
 
@@ -302,8 +317,9 @@ class ColorXHTML extends XHTML
                     $element->parentNode);
             }
 
-            $body = $document->saveHTML($document->documentElement->firstChild);
-            $body = substr($body, 7, -8);
+            $body = $document->saveHTML($document->documentElement->childNodes->item(1));
+            $body = substr($body, 6, -7);
+            $body = trim($body);
 
             $return = $body;
         } catch (\Exception $e) {
