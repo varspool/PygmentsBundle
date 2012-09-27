@@ -10,7 +10,7 @@
             "homepage": "https://github.com/dominics"
         }
     ],
-    
+    "minimum-stability": "dev",
     "require": {
         "symfony/framework-bundle": "2.*",
         "kwattro/markdown-bundle": "dev-master"
