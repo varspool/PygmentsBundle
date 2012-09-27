@@ -10,9 +10,10 @@
             "homepage": "https://github.com/dominics"
         }
     ],
+    
     "require": {
         "symfony/framework-bundle": "2.*",
-        "kwattro/markdown-bundle": "*"
+        "kwattro/markdown-bundle": "dev-master"
     },
     "autoload": {
         "psr-0": { "Varspool\\PygmentsBundle": "" }
