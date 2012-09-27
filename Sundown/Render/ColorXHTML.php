@@ -178,15 +178,22 @@ class ColorXHTML extends XHTML
 
     protected function getLexerArguments($language, $content)
     {
+        $defaultArgs = array(
+            'linenos' => 'table',
+        );
+        
         switch ($language) {
             case 'php':
-                return array(
+                $args = array(
                     'startinline' => (strpos($content, '<?php') !== false ? 'False' : 'True')
                 );
                 break;
             default:
-                return array();
+                $args = array();
+                break;
         }
+        
+        return array_merge($args, $defaultArgs);
     }
 
     /**
@@ -270,10 +277,17 @@ class ColorXHTML extends XHTML
     public function blockCode($code, $language)
     {
         try {
-            $colorized = $this->colorize($language, $code);
-            $colorized = substr($colorized, 28, -12);
-            $colorized = sprintf('<pre><code class="highlight %s">%s</code></pre>', $language, $colorized);
-
+            $colorized = preg_replace(array(
+                    '#<pre>#',
+                    '#</pre>#',
+                    '#class="highlight"#',
+                ), array(
+                    '<pre><code>',
+                    '</code></pre>',
+                    'class="highlight '.$language.'"'
+                ), 
+                $this->colorize($language, $code));
+            
             return $colorized;
         } catch (\Exception $e) {
             $this->logger->warn($e);
