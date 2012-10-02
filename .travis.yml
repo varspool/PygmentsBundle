@@ -1,6 +1,6 @@
 language: php
 
-script: phpunit -c ./phpunit.xml
+script: ./.travis
 
 php:
   - 5.3
