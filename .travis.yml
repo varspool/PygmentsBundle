@@ -1,0 +1,17 @@
+language: php
+
+script: phpunit -c ./phpunit.xml
+
+php:
+  - 5.3
+  - 5.4
+
+branches:
+  only:
+    - master
+    - devel
+    - 2.0
+
+notifications:
+  email:
+    - dominic@varspool.com
