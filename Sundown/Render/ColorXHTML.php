@@ -324,17 +324,22 @@ class ColorXHTML extends XHTML
         }
 
         try {
+            $colorized = $this->colorize($language, $code);
+
             $colorized = preg_replace(array(
                     '#<pre>#',
                     '#</pre>#',
-                    '#class="highlight"#',
+                    '#^<div class="highlight">#',
+                    '#</div>$#'
                 ), array(
-                    '<pre><code>',
+                    '<pre><code class="highlight ' . $language . '">',
                     '</code></pre>',
-                    'class="highlight '.$language.'"'
-                ), 
-                $this->colorize($language, $code));
-            
+                    '',
+                    ''
+                ),
+                $colorized
+            );
+
             return $colorized;
         } catch (\Exception $e) {
             $this->logger->warn($e);
