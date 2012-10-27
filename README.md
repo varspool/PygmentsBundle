@@ -6,7 +6,7 @@ including syntax-highted fenced code blocks. Code coloring is provided by
 the Python Pygments library (interfaces with pygmentize using proc\_open for now).
 
 VarspoolPygmentsBundle doesn't reinvent the wheel: it uses the Sundown support
-in [KwattroMarkdownBundle](https://github.com/kwattro/KwattroMarkdownBundle) to do 
+in [KwattroMarkdownBundle](https://github.com/kwattro/KwattroMarkdownBundle) to do
 the initial Markdown rendering.
 
 ## Installation
@@ -40,46 +40,10 @@ The key thing, however, is just that you have the pygmentize script available
 to execute. It's usually at `/usr/bin/pygmentize`, but if not, you can
 configure its location (see app/config.yml below).
 
-### deps file
+### Composer
 
-If you're using bin/vendors to configure your dependencies, add the following
-lines to your `deps` file:
-
-```ini
-[KwattroMarkdownBundle]
-    git=http://github.com/kwattro/KwattroMarkdownBundle.git
-    target=/bundles/Kwattro/MarkdownBundle
-
-[VarspoolPygmentsBundle]
-    git=git://github.com/dominics/VarspoolPygmentsBundle.git
-    target=/bundles/Varspool/PygmentsBundle
-    version=origin/master
-```
-
-Or, fork to your own repository first so you can send in pull requests and 
-improve the bundles! Once you've done this you can use `bin/vendors` to obtain
-the bundles:
-
-```
-$ bin/vendors update
-
-[...]
-  > Installing/Updating KwattroMarkdownBundle
-  > Installing/Updating VarspoolPygmentsBundle
-```
-
-### app/autoload.php
-
-Register the Varspool namespace in your autoloader:
-
-```php
-# app/autoload.php
-$loader->registerNamespaces(array(
-    // [...]
-    'Varspool' => __DIR__.'/../vendor/bundles',
-    'Kwattro'  => __DIR__.'/../vendor/bundles'
-));
-```
+Add `varspool/pygments-bundle` to your requires field. Then install/update your
+dependencies.
 
 ### app/AppKernel.php
 
@@ -115,13 +79,25 @@ varspool_pygments:
     bin:     /usr/local/bin/pygmentize
 ```
 
+You can also specify lexer arguments, that'll be passed to Pygmentize. See
+[the documentation](http://pygments.org/docs/lexers/) for a list:
+
+```yaml
+varspool_pygments:
+  lexer_arguments:
+    linenos: table
+```
+
+Despite its name, this option can also contain [formatter arguments](http://pygments.org/docs/formatters/),
+such as linenos.
+
 ## Usage
 
 ### Services
 
 #### kwattro_markdown
 
-KwattroMarkdownBundle usually provides the `kwattro_markdown` service. This 
+KwattroMarkdownBundle usually provides the `kwattro_markdown` service. This
 won't change when you set up VarspoolPygmentsBundle: the service will continue
 to provide a Markdown rendering without syntax highlighting. This service is
 usually a `Kwattro\MarkdownBundle\Markdown\KwattroMarkdown` object.
@@ -132,11 +108,11 @@ $xhtml = $this->get('kwattro_markdown')->render($markdown_source);
 
 #### varspool_markdown
 
-Once you've installed VarspoolPygmentsBundle, you'll have a second service 
+Once you've installed VarspoolPygmentsBundle, you'll have a second service
 available: `vaspool_markdown`. This service will extend
 `Kwattro\MarkdownBundle\Markdown\KwattroMarkdown`, so you should just be able
 to swap it in as a replacement quite easily. It'll colorize fenced code blocks
-in the markdown. This service is usually a 
+in the markdown. This service is usually a
 `Varspool\PygmentsBundle\Markdown\KwattroMarkdown` object.
 
 ```php
@@ -145,7 +121,7 @@ $colorized_xhtml = $this->get('varspool_markdown')->render($markdown_source);
 
 #### varspool_pygments
 
-This service is the Sundown renderer instance responsible for coloring the 
+This service is the Sundown renderer instance responsible for coloring the
 output. It's usually an instance of `Varspool\PygmentsBundle\Sundown\Render\ColorXHTML`.
 
 ### Stylesheets
@@ -156,13 +132,13 @@ You'll then need to assign stlying to these tags.
 #### SCSS/Compass
 
 If you're already using Compass or SASS, there's an example Pygments stylesheet
-in Resources/public/css/_pygments.scss. The default implementation uses the 
+in Resources/public/css/_pygments.scss. The default implementation uses the
 [Solarized](http://ethanschoonover.com/solarized) color scheme. You should be
 able to @import this stylesheet from one of your own.
 
 #### Dynamic Styles
 
-Pygments can provide one of several stylesheets to automatically color the 
+Pygments can provide one of several stylesheets to automatically color the
 output. A controller is provided that will output styles by calling
 `pygmentize -S <style>`. To use the controller, reference it from your routing:
 
@@ -171,7 +147,7 @@ output. A controller is provided that will output styles by calling
 varspool_pygments:
   resource: '@VarspoolPygmentsBundle/Controller/PygmentsController.php'
   type: annotation
-``` 
+```
 
 Then include a CSS file in your page via the URL `/pygments/<pygments_formatter>/<pygments_style>.css`.
 (e.g. /pygments/html/friendly.css).

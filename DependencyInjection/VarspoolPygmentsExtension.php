@@ -17,7 +17,7 @@ class VarspoolPygmentsExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
-        $container->setParameter('varspool_pygments.bin', $config['bin']);
+        $container->setParameter('varspool_pygments.options', $config);
     }
 
     public function getXsdValidationBasePath()

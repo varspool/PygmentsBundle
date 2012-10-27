@@ -15,6 +15,10 @@ class Configuration implements ConfigurationInterface
         $rootNode
             ->children()
                 ->scalarNode('bin')->defaultValue('/usr/bin/pygmentize')->end()
+                ->arrayNode('lexer_arguments')
+                    ->useAttributeAsKey('name')
+                    ->prototype('scalar')->end()
+                ->end()
             ->end()
         ;
 

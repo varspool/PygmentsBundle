@@ -8,7 +8,7 @@
         <service id="varspool_pygments"
                  class="Varspool\PygmentsBundle\Sundown\Render\ColorXHTML">
             <argument type="service" id="logger" />
-            <argument>%varspool_pygments.bin%</argument>
+            <argument>%varspool_pygments.options%</argument>
         </service>
         
         <service id="varspool_markdown" 

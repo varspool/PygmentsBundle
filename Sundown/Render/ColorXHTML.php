@@ -33,13 +33,7 @@ class ColorXHTML extends XHTML
      */
     protected static $styles = array();
 
-    /**
-     * Use your configuration management to ensure this exists. It's provided
-     * by the python-pygments package in Debian/Ubuntu.
-     *
-     * @var string
-     */
-    protected $pygmentize;
+    protected $options;
 
     /**
      * Used for DomDocument workaround
@@ -49,16 +43,56 @@ class ColorXHTML extends XHTML
     protected $documentTemplate = '<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/></head><body>%s</body></html>';
 
     /**
+     * Constructor
      *
-     * @param unknown_type $pygmentize
+     * @param array $options
+     *     Formerly string $pygmentize (BC).
+     *     Supported options:
+     *       - bin             => string, path to pygmentize
+     *       - lexer_arguments => array, default lexer arguments
      * @param Logger $logger
      */
-    public function __construct(Logger $logger, $pygmentize = '/usr/bin/pygmentize')
+    public function __construct(Logger $logger, $options = array())
     {
         parent::__construct();
 
         $this->logger = $logger;
-        $this->pygmentize = $pygmentize;
+
+        // BC for $pygmentize param, will be removed in future
+        if (is_string($options)) {
+            $options = array('bin' => $options);
+        }
+
+        $this->configure($options);
+    }
+
+    /**
+     * Configures the instance based on the options, setting default options
+     *
+     * @param array<string => mixed> $options
+     */
+    protected function configure(array $options)
+    {
+        $options = array_merge(array(
+            // Use your configuration management to ensure this path exists,
+            // or override it by passing in an alternative path as an option.
+            'bin'      => '/usr/bin/pygmentize',
+
+            'lexer_arguments' => array()
+        ), $options);
+
+        $this->options = $options;
+    }
+
+    /**
+     * Sets an option
+     *
+     * @param string $name
+     * @param mixed $value
+     */
+    public function setOption($name, $value)
+    {
+        $this->options[$name] = $value;
     }
 
     /**
@@ -81,14 +115,14 @@ class ColorXHTML extends XHTML
         if (empty($this->validLanguages)) {
             $this->validLanguages = array();
 
-            if (!is_executable($this->pygmentize)) {
+            if (!is_executable($this->options['bin'])) {
                 $this->logger->err('Disabling colorization: pygmentize not +x');
                 return array();
             }
 
             $command = sprintf(
                 '%s -L lexers',
-                $this->pygmentize
+                $this->options['bin']
             );
 
             $output = `$command`;
@@ -125,7 +159,7 @@ class ColorXHTML extends XHTML
 
         $command = sprintf(
             '%s -S %s -f %s',
-            escapeshellcmd($this->pygmentize),
+            escapeshellcmd($this->options['bin']),
             escapeshellarg($style),
             escapeshellarg($formatter)
         );
@@ -176,12 +210,18 @@ class ColorXHTML extends XHTML
         return false;
     }
 
+    /**
+     * Gets default lexer arguments, by language and content
+     *
+     * The basic default lexer arguments can be provided by the lexer_arguments
+     * option.
+     *
+     * @param string $language
+     * @param string $content
+     * @return array
+     */
     protected function getLexerArguments($language, $content)
     {
-        $defaultArgs = array(
-            'linenos' => 'table',
-        );
-        
         switch ($language) {
             case 'php':
                 $args = array(
@@ -192,8 +232,8 @@ class ColorXHTML extends XHTML
                 $args = array();
                 break;
         }
-        
-        return array_merge($args, $defaultArgs);
+
+        return array_merge($args, $this->options['lexer_arguments']);
     }
 
     /**
@@ -216,7 +256,7 @@ class ColorXHTML extends XHTML
 
         $command = sprintf(
             '%s -l %s -f html %s',
-            $this->pygmentize,
+            $this->options['bin'],
             $language,
             $argstring
         );
