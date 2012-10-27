@@ -182,6 +182,9 @@ class ColorXHTML extends XHTML
      */
     protected function isValidLanguage($language)
     {
+        if (!$language) {
+            return false;
+        }
         return in_array($language, $this->getValidLanguages());
     }
 
@@ -316,6 +319,10 @@ class ColorXHTML extends XHTML
 
     public function blockCode($code, $language)
     {
+        if (!$this->isValidLanguage($language)) {
+            return parent::blockCode($code, $language);
+        }
+
         try {
             $colorized = preg_replace(array(
                     '#<pre>#',
@@ -331,7 +338,7 @@ class ColorXHTML extends XHTML
             return $colorized;
         } catch (\Exception $e) {
             $this->logger->warn($e);
-            return sprintf('<pre><code>%s</code></pre>', $code);
+            return parent::blockCode($code, $language);
         }
     }
 }
