@@ -16,5 +16,10 @@
                  parent="kwattro_markdown">
             <argument type="service" id="varspool_pygments" />
         </service>
+
+        <service id="varspool.twig.pygments_extension" class="Varspool\PygmentsBundle\Twig\PygmentsExtension">
+            <argument type="service" id="varspool_pygments"/>
+            <tag name="twig.extension" />
+        </service>
     </services>
 </container>
